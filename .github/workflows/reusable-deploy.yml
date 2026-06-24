@@ -22,6 +22,9 @@ jobs:
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
       CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
       SITE_URL: ${{ inputs.site_url }}
+      PROJECT_NAME: ${{ inputs.project_name }}
+      BUILD_COMMAND: ${{ inputs.build_command }}
+      WRANGLER_CONFIG: ${{ inputs.wrangler_config }}
     steps:
       - uses: actions/checkout@v4
       - name: Load pinned tool versions
@@ -38,12 +41,12 @@ jobs:
       - run: npm ci
       - name: Swap wrangler config (worker, optional)
         if: inputs.deploy_kind == 'worker' && inputs.wrangler_config != ''
-        run: cp "${{ inputs.wrangler_config }}" wrangler.toml
+        run: cp "$WRANGLER_CONFIG" wrangler.toml
       - name: Build
-        run: ${{ inputs.build_command }}
+        run: $BUILD_COMMAND
       - name: Deploy (Pages)
         if: inputs.deploy_kind == 'pages'
-        run: npx wrangler@${WRANGLER_VERSION} pages deploy dist --project-name="${{ inputs.project_name }}" --commit-dirty=true
+        run: npx wrangler@${WRANGLER_VERSION} pages deploy dist --project-name="$PROJECT_NAME" --commit-dirty=true
       - name: Deploy (Worker)
         if: inputs.deploy_kind == 'worker'
         run: npx wrangler@${WRANGLER_VERSION} deploy --config dist/server/wrangler.json

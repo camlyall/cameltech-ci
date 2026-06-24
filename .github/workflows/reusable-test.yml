@@ -35,7 +35,8 @@ jobs:
       - name: Test (mode resolved centrally)
         env:
           CI_ROOT: ${{ github.workspace }}/cameltech-ci
+          LANGUAGE: ${{ inputs.language }}
         run: |
           bash cameltech-ci/scripts/test-entry.sh \
-            "${GITHUB_REPOSITORY##*/}" "${{ inputs.language }}" \
-            "${{ github.workspace }}/target"
+            "${GITHUB_REPOSITORY##*/}" "$LANGUAGE" \
+            "$GITHUB_WORKSPACE/target"
