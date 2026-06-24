@@ -27,7 +27,7 @@ jobs:
           path: cameltech-ci
       - name: Load pinned tool versions
         run: cat cameltech-ci/configs/tool-versions.env >> "$GITHUB_ENV"
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: npm
