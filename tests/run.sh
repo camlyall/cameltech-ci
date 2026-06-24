@@ -44,5 +44,15 @@ mkstub 1; assert_exit "findings under advisory -> 0" 0 \
 mkstub 2; assert_exit "infra under advisory -> 2 (fail loud)" 2 \
   env CI_REGISTRY="$REG" CI_RUN_LINT="$STUB" bash "$ROOT/scripts/lint-entry.sh" demo-advisory astro /tmp
 
+# --- test-entry.sh classification (run-test stubbed via CI_RUN_TEST) ---
+mkstub 0; assert_exit "test-mode none -> skip 0" 0 \
+  env CI_REGISTRY="$REG" CI_RUN_TEST="$STUB" bash "$ROOT/scripts/test-entry.sh" demo-advisory astro /tmp
+mkstub 1; assert_exit "test failures under advisory -> 0" 0 \
+  env CI_REGISTRY="$REG" CI_RUN_TEST="$STUB" bash "$ROOT/scripts/test-entry.sh" demo-gate astro /tmp
+mkstub 0; assert_exit "tests clean under advisory -> 0" 0 \
+  env CI_REGISTRY="$REG" CI_RUN_TEST="$STUB" bash "$ROOT/scripts/test-entry.sh" demo-gate astro /tmp
+mkstub 1; assert_exit "test failures under gate -> 1" 1 \
+  env CI_REGISTRY="$REG" CI_RUN_TEST="$STUB" bash "$ROOT/scripts/test-entry.sh" demo-testgate astro /tmp
+
 echo "---"; echo "PASS=$PASS FAIL=$FAIL"
 [ "$FAIL" -eq 0 ]

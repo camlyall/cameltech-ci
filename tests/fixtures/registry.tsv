@@ -2,3 +2,4 @@
 demo-gate	astro	gate	advisory	pages	cameron
 demo-advisory	astro	advisory	none	pages	cameron
 demo-bad	astro	bogus	none	pages	cameron
+demo-testgate	astro	advisory	gate	pages	cameron
