@@ -12,67 +12,51 @@ assert_exit() {
   local out; out="$("$@" 2>/dev/null)"; local rc=$?
   if [ "$rc" -eq "$exp" ]; then ok "$desc (exit $rc)"; else no "$desc (got $rc want $exp)"; fi
 }
-# assert_stdout <desc> <expected> <cmd...>
-assert_stdout() {
-  local desc="$1" exp="$2"; shift 2
-  local out; out="$("$@" 2>/dev/null)"
-  if [ "$out" = "$exp" ]; then ok "$desc"; else no "$desc (got '$out' want '$exp')"; fi
-}
 
-REG="$ROOT/tests/fixtures/registry.tsv"
-
-# --- resolve-mode.sh ---
-CI_REGISTRY="$REG" assert_stdout "resolve lint mode for registered repo" "gate" \
-  bash "$ROOT/scripts/resolve-mode.sh" demo-gate lint
-CI_REGISTRY="$REG" assert_stdout "resolve test mode for registered repo" "advisory" \
-  bash "$ROOT/scripts/resolve-mode.sh" demo-gate test
-CI_REGISTRY="$REG" assert_exit "unregistered repo -> exit 3" 3 \
-  env CI_REGISTRY="$REG" bash "$ROOT/scripts/resolve-mode.sh" nope lint
-CI_REGISTRY="$REG" assert_exit "invalid mode -> exit 4" 4 \
-  env CI_REGISTRY="$REG" bash "$ROOT/scripts/resolve-mode.sh" demo-bad lint
-
-# --- lint-entry.sh classification (run-lint stubbed via CI_RUN_LINT) ---
 STUB="$(mktemp)"; chmod +x "$STUB"
 mkstub() { printf '#!/usr/bin/env bash\nexit %s\n' "$1" > "$STUB"; }
 
-mkstub 0; CI_REGISTRY="$REG" CI_RUN_LINT="$STUB" assert_exit "clean -> 0 (gate)" 0 \
-  env CI_REGISTRY="$REG" CI_RUN_LINT="$STUB" bash "$ROOT/scripts/lint-entry.sh" demo-gate astro /tmp
-mkstub 1; CI_REGISTRY="$REG" CI_RUN_LINT="$STUB" assert_exit "findings under gate -> 1" 1 \
-  env CI_REGISTRY="$REG" CI_RUN_LINT="$STUB" bash "$ROOT/scripts/lint-entry.sh" demo-gate astro /tmp
-mkstub 1; assert_exit "findings under advisory -> 0" 0 \
-  env CI_REGISTRY="$REG" CI_RUN_LINT="$STUB" bash "$ROOT/scripts/lint-entry.sh" demo-advisory astro /tmp
-mkstub 2; assert_exit "infra under advisory -> 2 (fail loud)" 2 \
-  env CI_REGISTRY="$REG" CI_RUN_LINT="$STUB" bash "$ROOT/scripts/lint-entry.sh" demo-advisory astro /tmp
+# --- lint-entry.sh: mode passed as 3rd arg; run-lint stubbed via CI_RUN_LINT ---
+mkstub 0; assert_exit "lint clean under gate -> 0" 0 \
+  env CI_RUN_LINT="$STUB" bash "$ROOT/scripts/lint-entry.sh" astro /tmp gate
+mkstub 1; assert_exit "lint findings under gate -> 1" 1 \
+  env CI_RUN_LINT="$STUB" bash "$ROOT/scripts/lint-entry.sh" astro /tmp gate
+mkstub 1; assert_exit "lint findings under advisory -> 0" 0 \
+  env CI_RUN_LINT="$STUB" bash "$ROOT/scripts/lint-entry.sh" astro /tmp advisory
+mkstub 2; assert_exit "lint infra under advisory -> 2 (fail loud)" 2 \
+  env CI_RUN_LINT="$STUB" bash "$ROOT/scripts/lint-entry.sh" astro /tmp advisory
+mkstub 1; assert_exit "lint mode none -> skip 0" 0 \
+  env CI_RUN_LINT="$STUB" bash "$ROOT/scripts/lint-entry.sh" astro /tmp none
+assert_exit "lint invalid mode -> 4" 4 \
+  env CI_RUN_LINT="$STUB" bash "$ROOT/scripts/lint-entry.sh" astro /tmp bogus
 
-# --- test-entry.sh classification (run-test stubbed via CI_RUN_TEST) ---
-mkstub 0; assert_exit "test-mode none -> skip 0" 0 \
-  env CI_REGISTRY="$REG" CI_RUN_TEST="$STUB" bash "$ROOT/scripts/test-entry.sh" demo-advisory astro /tmp
+# --- test-entry.sh: mode passed as 3rd arg; run-test stubbed via CI_RUN_TEST ---
+mkstub 0; assert_exit "test mode none -> skip 0" 0 \
+  env CI_RUN_TEST="$STUB" bash "$ROOT/scripts/test-entry.sh" astro /tmp none
 mkstub 1; assert_exit "test failures under advisory -> 0" 0 \
-  env CI_REGISTRY="$REG" CI_RUN_TEST="$STUB" bash "$ROOT/scripts/test-entry.sh" demo-gate astro /tmp
-mkstub 0; assert_exit "tests clean under advisory -> 0" 0 \
-  env CI_REGISTRY="$REG" CI_RUN_TEST="$STUB" bash "$ROOT/scripts/test-entry.sh" demo-gate astro /tmp
+  env CI_RUN_TEST="$STUB" bash "$ROOT/scripts/test-entry.sh" astro /tmp advisory
 mkstub 1; assert_exit "test failures under gate -> 1" 1 \
-  env CI_REGISTRY="$REG" CI_RUN_TEST="$STUB" bash "$ROOT/scripts/test-entry.sh" demo-testgate astro /tmp
+  env CI_RUN_TEST="$STUB" bash "$ROOT/scripts/test-entry.sh" astro /tmp gate
+mkstub 0; assert_exit "tests clean under gate -> 0" 0 \
+  env CI_RUN_TEST="$STUB" bash "$ROOT/scripts/test-entry.sh" astro /tmp gate
 
-# --- sync-config.sh ---
+# --- sync-config.sh (registry-free; canonical from CI_ROOT/configs) ---
 TT="$(mktemp -d)"
 assert_exit "sync greenfield writes config -> 0" 0 \
-  env CI_REGISTRY="$REG" CI_ROOT="$ROOT" bash "$ROOT/scripts/sync-config.sh" demo-gate "$TT"
+  env CI_ROOT="$ROOT" bash "$ROOT/scripts/sync-config.sh" "$TT"
 [ -f "$TT/.prettierrc.json" ] && ok "config written" || no "config written"
 assert_exit "sync --check in-sync -> 0" 0 \
-  env CI_REGISTRY="$REG" CI_ROOT="$ROOT" bash "$ROOT/scripts/sync-config.sh" demo-gate "$TT" --check
+  env CI_ROOT="$ROOT" bash "$ROOT/scripts/sync-config.sh" "$TT" --check
 printf '{"x":1}\n' > "$TT/.prettierrc.json"
 assert_exit "sync --check drift -> 1" 1 \
-  env CI_REGISTRY="$REG" CI_ROOT="$ROOT" bash "$ROOT/scripts/sync-config.sh" demo-gate "$TT" --check
+  env CI_ROOT="$ROOT" bash "$ROOT/scripts/sync-config.sh" "$TT" --check
 assert_exit "sync --update overwrites drift -> 0" 0 \
-  env CI_REGISTRY="$REG" CI_ROOT="$ROOT" bash "$ROOT/scripts/sync-config.sh" demo-gate "$TT" --update
+  env CI_ROOT="$ROOT" bash "$ROOT/scripts/sync-config.sh" "$TT" --update
 TT2="$(mktemp -d)"
 assert_exit "sync --check absent -> 2" 2 \
-  env CI_REGISTRY="$REG" CI_ROOT="$ROOT" bash "$ROOT/scripts/sync-config.sh" demo-gate "$TT2" --check
-assert_exit "sync unregistered -> 3" 3 \
-  env CI_REGISTRY="$REG" CI_ROOT="$ROOT" bash "$ROOT/scripts/sync-config.sh" nope "$TT"
+  env CI_ROOT="$ROOT" bash "$ROOT/scripts/sync-config.sh" "$TT2" --check
 
-# --- fixtures: prettier must pass on clean, fail on dirty (uses canonical rules) ---
+# --- fixtures: prettier must pass on clean, fail on dirty ---
 PCFG="$ROOT/fixtures/.prettierrc.json"
 if npx --yes prettier@3.6.2 --config "$PCFG" --check "$ROOT/fixtures/astro-clean" >/dev/null 2>&1; then
   ok "prettier clean fixture passes"; else no "prettier clean fixture passes"; fi

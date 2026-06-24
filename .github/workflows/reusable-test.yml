@@ -5,6 +5,9 @@ on:
       language:
         type: string
         default: astro
+      test_mode:
+        type: string
+        default: none
 permissions:
   contents: read
 jobs:
@@ -32,11 +35,11 @@ jobs:
       - name: Install caller deps
         working-directory: target
         run: npm ci
-      - name: Test (mode resolved centrally)
+      - name: Test (mode from caller input)
         env:
           CI_ROOT: ${{ github.workspace }}/cameltech-ci
           LANGUAGE: ${{ inputs.language }}
+          TEST_MODE: ${{ inputs.test_mode }}
         run: |
           bash cameltech-ci/scripts/test-entry.sh \
-            "${GITHUB_REPOSITORY##*/}" "$LANGUAGE" \
-            "$GITHUB_WORKSPACE/target"
+            "$LANGUAGE" "$GITHUB_WORKSPACE/target" "$TEST_MODE"

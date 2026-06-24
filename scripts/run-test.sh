@@ -6,7 +6,7 @@ lang="${1:?}"; root="${2:?}"
 [ "$lang" = "astro" ] || die "run-test: unsupported language '$lang'" 2
 cd "$root" || die "cannot cd to $root" 2
 if ! node -e "process.exit(require('./package.json').scripts?.test?0:1)" 2>/dev/null; then
-  log "no test script in $root — treating as clean"; exit 0
+  log "no test script in $root, treating as clean"; exit 0
 fi
 npm test --silent; rc=$?
 case "$rc" in

@@ -1,23 +1,22 @@
 # cameltech-ci
 
-Single source of truth for linting, testing, and Cloudflare deployment across Cameron's webdev sites. Mirrors the penwern-ci pattern. Callers pin `camlyall/cameltech-ci/.github/workflows/<wf>.yml@v1`.
+Generic, reusable CI + Cloudflare deploy workflows for Cameron's webdev sites. Public by necessity (GitHub Free cannot share reusable workflows from a private repo), so it is kept deliberately generic: it holds no client roster and no secrets. Each private caller repo supplies its own per-repo settings (lint/test mode, deploy target) as workflow inputs. Callers pin `camlyall/cameltech-ci/.github/workflows/<wf>.yml@v1`.
 
 ## Reusable workflows
 
-- `reusable-lint.yml` — `astro check` + `prettier --check`. Input: `language` (default `astro`).
-- `reusable-test.yml` — `vitest`/`npm test` (skips when `test-mode=none`).
-- `reusable-deploy.yml` — Cloudflare deploy. Inputs: `deploy_kind` (pages|worker), `project_name`, `environment` (dev|prod), `site_url`, `build_command`, `wrangler_config`. Secrets: `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`.
+- `reusable-lint.yml`: `astro check` + `prettier --check`. Inputs: `language` (default `astro`), `lint_mode` (none|advisory|gate, default `advisory`).
+- `reusable-test.yml`: `vitest`/`npm test`. Inputs: `language` (default `astro`), `test_mode` (none|advisory|gate, default `none`; `none` skips tests).
+- `reusable-deploy.yml`: Cloudflare deploy. Inputs: `deploy_kind` (pages|worker), `project_name`, `environment` (dev|prod), `site_url`, `build_command`, `wrangler_config`. Secrets: `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`.
 
-## registry.tsv
+## Modes (advisory / gate)
 
-`repo  language  lint-mode  test-mode  deploy  owner`. Modes: `none|advisory|gate`. Mode is resolved centrally; flip advisory to gate here, then re-tag `v1` (no change in the target repo).
+A tier runs in `advisory` (findings reported, non-blocking) or `gate` (findings block). Infra errors fail loud in every mode (advisory never masks a broken toolchain). The mode is NOT stored centrally; each caller declares it in its own workflow via `lint_mode` / `test_mode`. There is no `registry.tsv`, so nothing client-identifying lives in this public repo.
 
 ## Onboard a site
 
-1. Add a registry row; commit; re-tag `v1`.
-2. `CI_ROOT=$PWD bash scripts/sync-config.sh <slug> <path-to-repo>` to drop `.prettierrc.json`. Commit config + a one-time `prettier --write` sweep in the target.
-3. Add caller workflows `.github/workflows/{lint,test,deploy}.yml` + an npm-only `dependabot.yml`; delete the old `ci.yml`.
-4. Set `CLOUDFLARE_API_TOKEN` + `CLOUDFLARE_ACCOUNT_ID` repo secrets; create `dev`/`prod` Environments.
+1. `CI_ROOT=$PWD bash scripts/sync-config.sh <path-to-repo>` to drop the canonical `.prettierrc.json`. Commit config + a one-time `prettier --write` sweep in the target.
+2. Add caller workflows `.github/workflows/{lint,test,deploy}.yml` (set `lint_mode` / `test_mode` / deploy inputs) + an npm-only `dependabot.yml`; delete the old `ci.yml`.
+3. Set `CLOUDFLARE_API_TOKEN` + `CLOUDFLARE_ACCOUNT_ID` repo secrets; create `dev`/`prod` Environments.
 
 ## Releasing: the v1 tag
 
@@ -30,7 +29,7 @@ git tag -f v1 && git push -f origin v1
 
 ## Advisory to gate
 
-Flip the relevant mode column in `registry.tsv`, commit, re-tag `v1`. No commit in the target repo.
+Bump `lint_mode` (or `test_mode`) from `advisory` to `gate` in the caller repo's own workflow once its backlog is clean. One-line edit, per repo.
 
 ## Layer B (future)
 
