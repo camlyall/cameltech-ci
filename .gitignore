@@ -1,3 +1,6 @@
 # scratch from local test runs
 /tmp-*
 *.log
+
+# SDD scratch (briefs, reports, review packages)
+.superpowers/
