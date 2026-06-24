@@ -1,0 +1,41 @@
+name: reusable-lint
+on:
+  workflow_call:
+    inputs:
+      language:
+        type: string
+        default: astro
+permissions:
+  contents: read
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout caller repo
+        uses: actions/checkout@v4
+        with:
+          path: target
+      - name: Checkout cameltech-ci engine
+        uses: actions/checkout@v4
+        with:
+          repository: camlyall/cameltech-ci
+          ref: v1
+          path: cameltech-ci
+      - name: Load pinned tool versions
+        run: cat cameltech-ci/configs/tool-versions.env >> "$GITHUB_ENV"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: target/package-lock.json
+      - name: Install caller deps
+        working-directory: target
+        run: npm ci
+      - name: Lint (mode resolved centrally)
+        env:
+          CI_ROOT: ${{ github.workspace }}/cameltech-ci
+        run: |
+          bash cameltech-ci/scripts/lint-entry.sh \
+            "${GITHUB_REPOSITORY##*/}" "${{ inputs.language }}" \
+            "${{ github.workspace }}/target"
