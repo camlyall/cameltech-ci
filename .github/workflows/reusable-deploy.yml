@@ -33,10 +33,12 @@ jobs:
           repository: camlyall/cameltech-ci
           ref: v1
           path: .cameltech-ci
-      - run: cat .cameltech-ci/configs/tool-versions.env >> "$GITHUB_ENV"
+      - name: Load pinned tool versions
+        id: tools
+        run: cat .cameltech-ci/configs/tool-versions.env | tee -a "$GITHUB_ENV" >> "$GITHUB_OUTPUT"
       - uses: actions/setup-node@v4
         with:
-          node-version: ${{ env.NODE_VERSION }}
+          node-version: ${{ steps.tools.outputs.NODE_VERSION }}
           cache: npm
       - run: npm ci
       - name: Swap wrangler config (worker, optional)
