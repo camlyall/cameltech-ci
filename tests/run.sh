@@ -72,5 +72,12 @@ assert_exit "sync --check absent -> 2" 2 \
 assert_exit "sync unregistered -> 3" 3 \
   env CI_REGISTRY="$REG" CI_ROOT="$ROOT" bash "$ROOT/scripts/sync-config.sh" nope "$TT"
 
+# --- fixtures: prettier must pass on clean, fail on dirty (uses canonical rules) ---
+PCFG="$ROOT/fixtures/.prettierrc.json"
+if npx --yes prettier@3.6.2 --config "$PCFG" --check "$ROOT/fixtures/astro-clean" >/dev/null 2>&1; then
+  ok "prettier clean fixture passes"; else no "prettier clean fixture passes"; fi
+if npx --yes prettier@3.6.2 --config "$PCFG" --check "$ROOT/fixtures/astro-dirty" >/dev/null 2>&1; then
+  no "prettier dirty fixture should fail"; else ok "prettier dirty fixture fails as expected"; fi
+
 echo "---"; echo "PASS=$PASS FAIL=$FAIL"
 [ "$FAIL" -eq 0 ]
