@@ -31,5 +31,18 @@ CI_REGISTRY="$REG" assert_exit "unregistered repo -> exit 3" 3 \
 CI_REGISTRY="$REG" assert_exit "invalid mode -> exit 4" 4 \
   env CI_REGISTRY="$REG" bash "$ROOT/scripts/resolve-mode.sh" demo-bad lint
 
+# --- lint-entry.sh classification (run-lint stubbed via CI_RUN_LINT) ---
+STUB="$(mktemp)"; chmod +x "$STUB"
+mkstub() { printf '#!/usr/bin/env bash\nexit %s\n' "$1" > "$STUB"; }
+
+mkstub 0; CI_REGISTRY="$REG" CI_RUN_LINT="$STUB" assert_exit "clean -> 0 (gate)" 0 \
+  env CI_REGISTRY="$REG" CI_RUN_LINT="$STUB" bash "$ROOT/scripts/lint-entry.sh" demo-gate astro /tmp
+mkstub 1; CI_REGISTRY="$REG" CI_RUN_LINT="$STUB" assert_exit "findings under gate -> 1" 1 \
+  env CI_REGISTRY="$REG" CI_RUN_LINT="$STUB" bash "$ROOT/scripts/lint-entry.sh" demo-gate astro /tmp
+mkstub 1; assert_exit "findings under advisory -> 0" 0 \
+  env CI_REGISTRY="$REG" CI_RUN_LINT="$STUB" bash "$ROOT/scripts/lint-entry.sh" demo-advisory astro /tmp
+mkstub 2; assert_exit "infra under advisory -> 2 (fail loud)" 2 \
+  env CI_REGISTRY="$REG" CI_RUN_LINT="$STUB" bash "$ROOT/scripts/lint-entry.sh" demo-advisory astro /tmp
+
 echo "---"; echo "PASS=$PASS FAIL=$FAIL"
 [ "$FAIL" -eq 0 ]
