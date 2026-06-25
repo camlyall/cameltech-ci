@@ -40,22 +40,6 @@ mkstub 1; assert_exit "test failures under gate -> 1" 1 \
 mkstub 0; assert_exit "tests clean under gate -> 0" 0 \
   env CI_RUN_TEST="$STUB" bash "$ROOT/scripts/test-entry.sh" astro /tmp gate
 
-# --- sync-config.sh (registry-free; canonical from CI_ROOT/configs) ---
-TT="$(mktemp -d)"
-assert_exit "sync greenfield writes config -> 0" 0 \
-  env CI_ROOT="$ROOT" bash "$ROOT/scripts/sync-config.sh" "$TT"
-[ -f "$TT/.prettierrc.json" ] && ok "config written" || no "config written"
-assert_exit "sync --check in-sync -> 0" 0 \
-  env CI_ROOT="$ROOT" bash "$ROOT/scripts/sync-config.sh" "$TT" --check
-printf '{"x":1}\n' > "$TT/.prettierrc.json"
-assert_exit "sync --check drift -> 1" 1 \
-  env CI_ROOT="$ROOT" bash "$ROOT/scripts/sync-config.sh" "$TT" --check
-assert_exit "sync --update overwrites drift -> 0" 0 \
-  env CI_ROOT="$ROOT" bash "$ROOT/scripts/sync-config.sh" "$TT" --update
-TT2="$(mktemp -d)"
-assert_exit "sync --check absent -> 2" 2 \
-  env CI_ROOT="$ROOT" bash "$ROOT/scripts/sync-config.sh" "$TT2" --check
-
 # --- fixtures: prettier must pass on clean, fail on dirty ---
 PCFG="$ROOT/fixtures/.prettierrc.json"
 if npx --yes prettier@3.6.2 --config "$PCFG" --check "$ROOT/fixtures/astro-clean" >/dev/null 2>&1; then

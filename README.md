@@ -14,7 +14,7 @@ A tier runs in `advisory` (findings reported, non-blocking) or `gate` (findings 
 
 ## Onboard a site
 
-1. `CI_ROOT=$PWD bash scripts/sync-config.sh <path-to-repo>` to drop the canonical `.prettierrc.json`. Commit config + a one-time `prettier --write` sweep in the target.
+1. In the target repo install `prettier`, `prettier-plugin-astro`, and `prettier-plugin-tailwindcss` as devDeps, and add a `.prettierignore` (build output, `docs/`, the generated `src/env.d.ts`, plus any files prettier-plugin-astro cannot parse). Run a one-time sweep against the canonical config: `prettier --write . --config <cameltech-ci>/configs/prettierrc.json` and commit. Repos carry **no** `.prettierrc.json` — CI lints against the central config directly.
 2. Add caller workflows `.github/workflows/{lint,test,deploy}.yml` (set `lint_mode` / `test_mode` / deploy inputs) + an npm-only `dependabot.yml`; delete the old `ci.yml`.
 3. Set `CLOUDFLARE_API_TOKEN` + `CLOUDFLARE_ACCOUNT_ID` repo secrets; create `dev`/`prod` Environments.
 
