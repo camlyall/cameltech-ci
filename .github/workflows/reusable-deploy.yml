@@ -26,9 +26,9 @@ jobs:
       BUILD_COMMAND: ${{ inputs.build_command }}
       WRANGLER_CONFIG: ${{ inputs.wrangler_config }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - name: Checkout cameltech-ci engine
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           repository: camlyall/cameltech-ci
           ref: v1
