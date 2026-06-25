@@ -26,9 +26,9 @@ jobs:
       BUILD_COMMAND: ${{ inputs.build_command }}
       WRANGLER_CONFIG: ${{ inputs.wrangler_config }}
     steps:
-      - uses: actions/checkout@v4
-      - name: Load pinned tool versions
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v6
+      - name: Checkout cameltech-ci engine
+        uses: actions/checkout@v6
         with:
           repository: camlyall/cameltech-ci
           ref: v1
@@ -36,7 +36,7 @@ jobs:
       - name: Load pinned tool versions
         id: tools
         run: cat .cameltech-ci/configs/tool-versions.env | tee -a "$GITHUB_ENV" >> "$GITHUB_OUTPUT"
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
           node-version: ${{ steps.tools.outputs.NODE_VERSION }}
           cache: npm

@@ -16,11 +16,11 @@ jobs:
     timeout-minutes: 20
     steps:
       - name: Checkout caller repo
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           path: target
       - name: Checkout cameltech-ci engine
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           repository: camlyall/cameltech-ci
           ref: v1
@@ -28,7 +28,7 @@ jobs:
       - name: Load pinned tool versions
         id: tools
         run: cat cameltech-ci/configs/tool-versions.env >> "$GITHUB_OUTPUT"
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
           node-version: ${{ steps.tools.outputs.NODE_VERSION }}
           cache: npm
