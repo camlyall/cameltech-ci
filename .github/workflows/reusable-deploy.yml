@@ -8,6 +8,8 @@ on:
       site_url: { type: string, required: true }
       build_command: { type: string, default: "npm run build" }
       wrangler_config: { type: string, default: "" }
+      run_check: { type: boolean, default: false }
+      run_test: { type: boolean, default: false }
     secrets:
       CLOUDFLARE_API_TOKEN: { required: true }
       CLOUDFLARE_ACCOUNT_ID: { required: true }
@@ -44,6 +46,12 @@ jobs:
       - name: Swap wrangler config (worker, optional)
         if: inputs.deploy_kind == 'worker' && inputs.wrangler_config != ''
         run: cp "$WRANGLER_CONFIG" wrangler.toml
+      - name: Typecheck (optional gate)
+        if: inputs.run_check
+        run: npm run check
+      - name: Test (optional gate)
+        if: inputs.run_test
+        run: npm test
       - name: Build
         run: $BUILD_COMMAND
       - name: Ensure Pages project exists (idempotent)
